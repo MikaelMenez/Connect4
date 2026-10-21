@@ -1,4 +1,11 @@
-/* Estilos complementares e animações para o Connect 4 */
+/* Custom Font & Base Styling */
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+code, pre {
+    font-family: 'JetBrains Mono', monospace;
+}
 
 /* Animação suave de queda da peça */
 @keyframes dropPiece {
@@ -23,29 +30,53 @@
     animation: dropPiece 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
-/* Efeito de pulso para peças vencedoras */
-@keyframes winPulse {
-    0%, 100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.7);
-    }
-    50% {
-        transform: scale(1.08);
-        box-shadow: 0 0 20px 8px rgba(255, 255, 255, 0.9);
-    }
-}
-
-.piece-win {
-    animation: winPulse 1.2s infinite ease-in-out;
-}
-
-/* Slot no tabuleiro */
+/* Slot do tabuleiro */
 .board-slot {
     aspect-ratio: 1 / 1;
     position: relative;
 }
 
-/* Indicador de coluna ativa */
-.col-highlight {
-    background-color: rgba(255, 255, 255, 0.12);
+/* Custom Scrollbar da Árvore de Busca */
+.tree-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.tree-scrollbar::-webkit-scrollbar-track {
+    background: #020617;
+}
+.tree-scrollbar::-webkit-scrollbar-thumb {
+    background: #1e293b;
+    border-radius: 4px;
+}
+.tree-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #334155;
+}
+
+/* Estilos dos Elementos SVG da Árvore */
+.tree-link {
+    fill: none;
+    stroke: #334155;
+    stroke-width: 1.5;
+    transition: all 0.3s ease;
+}
+
+.tree-link.pruned {
+    stroke: #ef4444;
+    stroke-dasharray: 4 3;
+    opacity: 0.6;
+}
+
+.tree-link.best-path {
+    stroke: #f59e0b;
+    stroke-width: 3;
+    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.6));
+}
+
+.node-circle {
+    transition: transform 0.2s, filter 0.2s;
+    cursor: pointer;
+}
+
+.node-circle:hover {
+    filter: brightness(1.25) drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
 }
