@@ -23,32 +23,39 @@ pub struct Request {
 }
 pub async fn turn_minimax(
     State(state): State<AppState>,
-    Json(Payload): Json<Request>,
-) -> Result<Json<Response>, (axum::http::StatusCode, &'static str)> {
-    if Payload.column >= COLS {
+    Json(payload): Json<Request>,
+) -> Result<Json<Response>, (StatusCode, &'static str)> {
+    if payload.column >= COLS {
         return Err((StatusCode::BAD_REQUEST, "coluna inválida, tente de 0-6"));
     }
+
     let mut board = state.board.lock().map_err(|_| {
         (
             StatusCode::INTERNAL_SERVER_ERROR,
             "Erro de sincronização no servidor",
         )
     })?;
-    if board.drop_piece(Cell::Yellow, Payload.column).is_none() {
+
+    if board.drop_piece(Cell::Yellow, payload.column).is_none() {
         return Err((StatusCode::BAD_REQUEST, "coluna cheia"));
     }
+
+    // 1. Vitória do jogador (copia o estado final e reseta em memória)
     if board.check_win(Cell::Yellow) {
+        let final_board = *board;
+        *board = Board::new();
         return Ok(Json(Response {
-            board: *board,
+            board: final_board,
             status: Status::Victory(Cell::Yellow),
         }));
     }
 
+    // Empate após jogada do jogador
     if (0..COLS).all(|c| board[ROWS - 1][c] != Cell::Empty) {
-        let board_old = board.clone();
+        let final_board = *board;
         *board = Board::new();
         return Ok(Json(Response {
-            board: board_old,
+            board: final_board,
             status: Status::Draw,
         }));
     }
@@ -59,15 +66,21 @@ pub async fn turn_minimax(
     if let Some(col) = ai_col {
         board.drop_piece(Cell::Red, col);
 
+        // Vitória da IA (copia o estado final e reseta em memória)
         if board.check_win(Cell::Red) {
+            let final_board = *board;
+            *board = Board::new();
             return Ok(Json(Response {
-                board: *board,
+                board: final_board,
                 status: Status::Victory(Cell::Red),
             }));
         }
     }
 
+    // 3. Checa se empatou ou continua
     let full_after_ai = (0..COLS).all(|c| board[ROWS - 1][c] != Cell::Empty);
+    let final_board = *board;
+
     let status = if full_after_ai {
         *board = Board::new();
         Status::Draw
@@ -76,7 +89,7 @@ pub async fn turn_minimax(
     };
 
     Ok(Json(Response {
-        board: *board,
+        board: final_board,
         status,
     }))
 }

@@ -15,7 +15,7 @@ async fn main() {
 
     // Serve a pasta "static" na raiz do projeto (index.html, style.css, script.js)
     let app = Router::new()
-        .nest_service("/", ServeDir::new("static"))
+        .fallback_service(ServeDir::new("static"))
         .route("/turn_minimax", post(api::turn_minimax))
         .with_state(state);
 
@@ -25,4 +25,3 @@ async fn main() {
 
     axum::serve(listener, app).await.unwrap();
 }
-
