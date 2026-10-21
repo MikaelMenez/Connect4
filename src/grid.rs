@@ -1,16 +1,16 @@
+use serde::{Deserialize, Serialize};
 use std::{error::Error, fmt};
-
 pub const ROWS: usize = 6;
 pub const COLS: usize = 7;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq)]
 pub enum Cell {
     Empty,
     Yellow,
     Red,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Player {
     Min,
     Max,
@@ -27,7 +27,7 @@ impl Cell {
 }
 pub trait BoardTrait {
     fn new() -> Self;
-    fn drop(&mut self, color: Cell, column: usize) -> Option<usize>;
+    fn drop_piece(&mut self, color: Cell, column: usize) -> Option<usize>;
     fn check_win(&self, color: Cell) -> bool;
     fn minimax(&mut self, depth: u8, player: Player) -> (Option<usize>, i32);
 }
@@ -35,7 +35,7 @@ impl BoardTrait for Board {
     fn new() -> Self {
         [[Cell::Empty; COLS]; ROWS]
     }
-    fn drop(&mut self, color: Cell, column: usize) -> Option<usize> {
+    fn drop_piece(&mut self, color: Cell, column: usize) -> Option<usize> {
         for row in 0..ROWS {
             if self[row][column] == Cell::Empty {
                 self[row][column] = color;
@@ -82,7 +82,7 @@ impl BoardTrait for Board {
                 let mut best_score = i32::MIN;
                 let mut best_col = None;
                 for col in 0..COLS {
-                    if let Some(row) = self.drop(Cell::Red, col) {
+                    if let Some(row) = self.drop_piece(Cell::Red, col) {
                         let (_, score) = self.minimax(depth - 1, Player::Min);
                         self[row][col] = Cell::Empty;
                         if score > best_score || best_col.is_none() {
@@ -97,7 +97,7 @@ impl BoardTrait for Board {
                 let mut worst_score = i32::MAX;
                 let mut worst_col = None;
                 for col in 0..COLS {
-                    if let Some(row) = self.drop(Cell::Yellow, col) {
+                    if let Some(row) = self.drop_piece(Cell::Yellow, col) {
                         let (_, score) = self.minimax(depth - 1, Player::Max);
                         self[row][col] = Cell::Empty;
                         if score < worst_score || worst_col.is_none() {
