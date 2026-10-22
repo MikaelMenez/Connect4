@@ -21,9 +21,25 @@ pub struct Response {
 pub struct Request {
     pub column: usize,
 }
+
 pub async fn turn_minimax(
     State(state): State<AppState>,
     Json(payload): Json<Request>,
+) -> Result<Json<Response>, (StatusCode, &'static str)> {
+    process_turn(state, payload, false).await
+}
+
+pub async fn turn_alpha_beta(
+    State(state): State<AppState>,
+    Json(payload): Json<Request>,
+) -> Result<Json<Response>, (StatusCode, &'static str)> {
+    process_turn(state, payload, true).await
+}
+
+async fn process_turn(
+    state: AppState,
+    payload: Request,
+    use_alpha_beta: bool,
 ) -> Result<Json<Response>, (StatusCode, &'static str)> {
     if payload.column >= COLS {
         return Err((StatusCode::BAD_REQUEST, "coluna inválida, tente de 0-6"));
@@ -60,8 +76,12 @@ pub async fn turn_minimax(
         }));
     }
 
-    // 2. Jogada da IA (Red) via Minimax
-    let (ai_col, _) = board.minimax(5, Player::Max);
+    // 2. Jogada da IA (Red) usando o algoritmo escolhido pela rota.
+    let (ai_col, _) = if use_alpha_beta {
+        board.alpha_beta_prunning(5, Player::Max, i32::MIN, i32::MAX)
+    } else {
+        board.minimax(5, Player::Max)
+    };
 
     if let Some(col) = ai_col {
         board.drop_piece(Cell::Red, col);

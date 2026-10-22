@@ -17,6 +17,7 @@ async fn main() {
     let app = Router::new()
         .fallback_service(ServeDir::new("static"))
         .route("/turn_minimax", post(api::turn_minimax))
+        .route("/turn_alpha_beta", post(api::turn_alpha_beta))
         .with_state(state);
 
     let addr = "127.0.0.1:3000";

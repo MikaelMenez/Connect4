@@ -30,11 +30,19 @@ pub trait BoardTrait {
     fn drop_piece(&mut self, color: Cell, column: usize) -> Option<usize>;
     fn check_win(&self, color: Cell) -> bool;
     fn minimax(&mut self, depth: u8, player: Player) -> (Option<usize>, i32);
+    fn alpha_beta_prunning(
+        &mut self,
+        depth: u8,
+        player: Player,
+        alpha: i32,
+        beta: i32,
+    ) -> (Option<usize>, i32);
 }
 impl BoardTrait for Board {
     fn new() -> Self {
         [[Cell::Empty; COLS]; ROWS]
     }
+
     fn drop_piece(&mut self, color: Cell, column: usize) -> Option<usize> {
         for row in 0..ROWS {
             if self[row][column] == Cell::Empty {
@@ -44,6 +52,7 @@ impl BoardTrait for Board {
         }
         None
     }
+
     fn check_win(&self, color: Cell) -> bool {
         for r in 0..ROWS {
             for c in 0..COLS {
@@ -66,6 +75,7 @@ impl BoardTrait for Board {
         }
         false
     }
+
     fn minimax(&mut self, depth: u8, player: Player) -> (Option<usize>, i32) {
         if self.check_win(Cell::Red) {
             return (None, 1000 + depth as i32);
@@ -103,6 +113,74 @@ impl BoardTrait for Board {
                         if score < worst_score || worst_col.is_none() {
                             worst_score = score;
                             worst_col = Some(col)
+                        }
+                    }
+                }
+                (worst_col, worst_score)
+            }
+        }
+    }
+
+    fn alpha_beta_prunning(
+        &mut self,
+        depth: u8,
+        player: Player,
+        mut alpha: i32,
+        mut beta: i32,
+    ) -> (Option<usize>, i32) {
+        if self.check_win(Cell::Red) {
+            return (None, 1000 + depth as i32);
+        }
+        if self.check_win(Cell::Yellow) {
+            return (None, -1000 - depth as i32);
+        }
+
+        let full = (0..COLS).all(|c| self[ROWS - 1][c] != Cell::Empty);
+        if depth == 0 || full {
+            return (None, 0);
+        }
+        match player {
+            Player::Max => {
+                let mut best_score = i32::MIN;
+                let mut best_col = None;
+                for col in 0..COLS {
+                    if let Some(row) = self.drop_piece(Cell::Red, col) {
+                        let (_, score) =
+                            self.alpha_beta_prunning(depth - 1, Player::Min, alpha, beta);
+
+                        self[row][col] = Cell::Empty;
+
+                        if score > best_score || best_col.is_none() {
+                            best_score = score;
+                            best_col = Some(col)
+                        }
+
+                        alpha = alpha.max(best_score);
+                        if alpha >= beta {
+                            break;
+                        }
+                    }
+                }
+                (best_col, best_score)
+            }
+            Player::Min => {
+                let mut worst_score = i32::MAX;
+                let mut worst_col = None;
+                for col in 0..COLS {
+                    if let Some(row) = self.drop_piece(Cell::Yellow, col) {
+                        let (_, score) =
+                            self.alpha_beta_prunning(depth - 1, Player::Max, alpha, beta);
+
+                        self[row][col] = Cell::Empty;
+
+                        if score < worst_score || worst_col.is_none() {
+                            worst_score = score;
+                            worst_col = Some(col)
+                        }
+
+                        beta = beta.min(worst_score);
+                        if alpha >= beta {
+                            break;
                         }
                     }
                 }
