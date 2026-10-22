@@ -120,13 +120,27 @@ function renderBoard() {
 
 function createPiece(bgClass, shadowClass, borderClass, animated = false) {
     const piece = document.createElement('div');
-    piece.className = `w-[88%] h-[88%] rounded-full ${bgClass} ${shadowClass} border-2 ${borderClass} transition-all duration-300 ${animated ? 'piece-drop' : ''}`;
+    const colorClass = bgClass.includes('amber') ? 'piece-yellow' : 'piece-red';
+    piece.className = `piece ${colorClass} rounded-full ${animated ? 'piece-drop' : ''}`;
     return piece;
 }
 
 /**
  * Ação de clique de jogada do usuário
  */
+const AI_THINK_DELAY = 700; // ms
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+function dropLocal(col, color) {
+    for (let r = 0; r < ROWS; r++) {
+        if (boardState[r][col] === 'Empty') {
+            boardState[r][col] = color;
+            return r;
+        }
+    }
+    return null;
+}
+
 async function handleColumnClick(col) {
     if (isWaitingAi || isGameOver) return;
 
@@ -137,16 +151,29 @@ async function handleColumnClick(col) {
 
     isWaitingAi = true;
     updateControls();
-    setStatus('Processando jogada da IA...', 'loading');
 
-    previousBoardState = boardState.map(row => [...row]);
+    // Backup para rollback em caso de erro
+    const backup = cloneBoard(boardState);
+
+    // 1) Turno do usuário: a peça cai imediatamente
+    previousBoardState = cloneBoard(boardState);
+    dropLocal(col, 'Yellow');
+    renderBoard();
+
+    // A árvore mostra a posição que a IA vai analisar
+    generateAndRenderTree();
+    setStatus('IA pensando...', 'loading');
 
     try {
-        const response = await fetch(currentEndpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ column: col })
-        });
+        // 2) Turno da IA: espera a resposta e o tempo mínimo de "pensamento"
+        const [response] = await Promise.all([
+            fetch(currentEndpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ column: col })
+            }),
+            sleep(AI_THINK_DELAY)
+        ]);
 
         if (!response.ok) {
             const errorMsg = await response.text();
@@ -157,21 +184,23 @@ async function handleColumnClick(col) {
         handleServerResponse(data);
     } catch (err) {
         console.error('Erro na API:', err);
+        // Desfaz a jogada local para não dessincronizar com o servidor
+        boardState = backup;
+        previousBoardState = cloneBoard(backup);
+        renderBoard();
+        generateAndRenderTree();
         setStatus(`Erro ao comunicar com o servidor Rust: ${err.message}`, 'error');
         isWaitingAi = false;
         updateControls();
     }
 }
 
-/**
- * Trata o retorno do servidor e atualiza a interface
- */
 function handleServerResponse(data) {
+    // previousBoardState = tabuleiro com a jogada do usuário,
+    // então só a peça da IA é detectada como "nova" e animada
+    previousBoardState = cloneBoard(boardState);
     boardState = data.board;
     renderBoard();
-
-    // Recontrói a árvore de decisão para a nova posição do jogo
-    generateAndRenderTree();
 
     if (data.status === 'Ongoing') {
         setStatus('Sua vez de jogar! Escolha uma coluna.', 'ready');
@@ -181,11 +210,10 @@ function handleServerResponse(data) {
         isGameOver = true;
     } else if (typeof data.status === 'object' && data.status.Victory) {
         const winner = data.status.Victory;
-        if (winner === 'Yellow') {
-            setStatus('🎉 Parabéns! Você venceu a IA!', 'win');
-        } else {
-            setStatus('🤖 A IA venceu esta partida!', 'defeat');
-        }
+        setStatus(
+            winner === 'Yellow' ? 'Parabéns! Você venceu a IA!' : 'A IA venceu esta partida!',
+            winner === 'Yellow' ? 'win' : 'defeat'
+        );
         isGameOver = true;
     }
 
@@ -233,6 +261,7 @@ function updateControls() {
     colButtons.forEach(btn => {
         btn.disabled = isWaitingAi || isGameOver;
     });
+    btnRestart.disabled = isWaitingAi;
 }
 
 function updateAlgorithmUI() {
@@ -264,15 +293,31 @@ function setupEventListeners() {
     btnRestart.addEventListener('click', resetGameLocally);
 }
 
-function resetGameLocally() {
-    boardState = Array.from({ length: ROWS }, () => Array(COLS).fill('Empty'));
-    previousBoardState = Array.from({ length: ROWS }, () => Array(COLS).fill('Empty'));
-    isGameOver = false;
-    isWaitingAi = false;
-    renderBoard();
+async function resetGameLocally() {
+    if (isWaitingAi) return;
+
+    isWaitingAi = true;
     updateControls();
-    setStatus('Tabuleiro resetado localmente! Sua vez.', 'ready');
-    generateAndRenderTree();
+
+    try {
+        const response = await fetch('/reset', { method: 'POST' });
+        if (!response.ok) {
+            throw new Error(await response.text() || `Erro na requisição: ${response.status}`);
+        }
+
+        boardState = Array.from({ length: ROWS }, () => Array(COLS).fill('Empty'));
+        previousBoardState = Array.from({ length: ROWS }, () => Array(COLS).fill('Empty'));
+        isGameOver = false;
+        renderBoard();
+        setStatus('Tabuleiro reiniciado! Sua vez.', 'ready');
+        generateAndRenderTree();
+    } catch (err) {
+        console.error('Erro ao reiniciar:', err);
+        setStatus(`Erro ao reiniciar: ${err.message}`, 'error');
+    } finally {
+        isWaitingAi = false;
+        updateControls();
+    }
 }
 
 // ============================================================================

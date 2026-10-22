@@ -1,82 +1,200 @@
-/* Custom Font & Base Styling */
-body {
-    font-family: 'Plus Jakarta Sans', sans-serif;
+/* ===== Base ===== */
+:root {
+    --ink: #0b0f1a;
+    --panel: rgba(17, 24, 39, 0.72);
+    --line: rgba(148, 163, 184, 0.14);
+    --yellow: #fbbf24;
+    --red: #f43f5e;
+    --board-1: #2b57d6;
+    --board-2: #1a3a9c;
 }
 
-code, pre {
+body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background-color: var(--ink);
+    background-image:
+        radial-gradient(900px 500px at 12% -10%, rgba(43, 87, 214, 0.22), transparent 60%),
+        radial-gradient(700px 480px at 95% 105%, rgba(244, 63, 94, 0.14), transparent 60%),
+        radial-gradient(rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+    background-size: auto, auto, 22px 22px;
+    background-attachment: fixed;
+}
+
+code, pre, .font-mono {
     font-family: 'JetBrains Mono', monospace;
 }
 
-/* Animação suave de queda da peça */
+/* ===== Cards de vidro ===== */
+body section {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.06),
+        0 20px 50px -20px rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(14px);
+}
+
+#game-status {
+    min-height: 40px;
+    letter-spacing: 0.01em;
+}
+
+/* ===== Tabuleiro: plástico azul com furos reais ===== */
+#board {
+    padding: 2px;
+}
+
+main > div.relative {
+    background: linear-gradient(160deg, var(--board-1), var(--board-2)) !important;
+    border: none !important;
+    box-shadow:
+        inset 0 2px 0 rgba(255, 255, 255, 0.28),
+        inset 0 -6px 14px rgba(0, 0, 40, 0.45),
+        0 6px 0 #11266e,
+        0 28px 50px -12px rgba(26, 58, 156, 0.55) !important;
+}
+
+#board .board-slot {
+    background: #0a1647;
+    border: none;
+    box-shadow:
+        inset 0 5px 10px rgba(0, 0, 0, 0.75),
+        0 1px 0 rgba(255, 255, 255, 0.18);
+}
+
+#board .board-slot > div:not(.piece) {
+    background: #060b1f;
+    border: none;
+    box-shadow: none;
+}
+
+/* Peças com volume (adicione as classes .piece no JS) */
+#board .piece {
+    width: 90%;
+    height: 90%;
+    border: none;
+}
+
+#board .piece-yellow {
+    background: radial-gradient(circle at 35% 30%, #fde68a 0%, var(--yellow) 45%, #b45309 100%);
+    box-shadow:
+        inset 0 -4px 6px rgba(120, 53, 15, 0.45),
+        inset 0 0 0 5px rgba(255, 255, 255, 0.12),
+        0 3px 10px rgba(251, 191, 36, 0.35);
+}
+
+#board .piece-red {
+    background: radial-gradient(circle at 35% 30%, #fda4af 0%, var(--red) 45%, #9f1239 100%);
+    box-shadow:
+        inset 0 -4px 6px rgba(76, 5, 25, 0.5),
+        inset 0 0 0 5px rgba(255, 255, 255, 0.12),
+        0 3px 10px rgba(244, 63, 94, 0.35);
+}
+
+/* Hover da coluna */
+#board .board-slot.ring-2 {
+    --tw-ring-color: transparent;
+    filter: brightness(1.35);
+}
+
+/* Botões de coluna */
+#column-selectors button:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 18px -8px rgba(251, 191, 36, 0.5);
+}
+
+#btn-restart:active,
+#column-selectors button:active {
+    transform: scale(0.96);
+}
+
+/* ===== Queda da peça ===== */
 @keyframes dropPiece {
-    0% {
-        transform: translateY(-350px);
-        opacity: 0.3;
-    }
-    60% {
-        transform: translateY(12px);
-        opacity: 1;
-    }
-    80% {
-        transform: translateY(-6px);
-    }
-    100% {
-        transform: translateY(0);
-        opacity: 1;
-    }
+    0%   { transform: translateY(-380px); opacity: 0.2; }
+    55%  { transform: translateY(14px);   opacity: 1; }
+    75%  { transform: translateY(-7px); }
+    90%  { transform: translateY(3px); }
+    100% { transform: translateY(0); opacity: 1; }
 }
 
 .piece-drop {
-    animation: dropPiece 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    animation: dropPiece 0.55s cubic-bezier(0.3, 0.5, 0.4, 1);
 }
 
-/* Slot do tabuleiro */
 .board-slot {
     aspect-ratio: 1 / 1;
     position: relative;
 }
 
-/* Custom Scrollbar da Árvore de Busca */
-.tree-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-}
-.tree-scrollbar::-webkit-scrollbar-track {
-    background: #020617;
-}
-.tree-scrollbar::-webkit-scrollbar-thumb {
-    background: #1e293b;
-    border-radius: 4px;
-}
-.tree-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: #334155;
+/* ===== Scrollbar ===== */
+.tree-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+.tree-scrollbar::-webkit-scrollbar-track { background: transparent; }
+.tree-scrollbar::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
+.tree-scrollbar::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+/* ===== Árvore ===== */
+#tree-container {
+    background-image: radial-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+    background-size: 18px 18px;
 }
 
-/* Estilos dos Elementos SVG da Árvore */
 .tree-link {
     fill: none;
     stroke: #334155;
     stroke-width: 1.5;
-    transition: all 0.3s ease;
+}
+
+/* A árvore se desenha a cada jogada */
+@keyframes drawLink {
+    from { stroke-dashoffset: 600; }
+    to   { stroke-dashoffset: 0; }
+}
+
+.tree-link:not(.pruned) {
+    stroke-dasharray: 600;
+    animation: drawLink 0.9s ease-out forwards;
 }
 
 .tree-link.pruned {
     stroke: #ef4444;
     stroke-dasharray: 4 3;
-    opacity: 0.6;
+    opacity: 0.55;
 }
 
 .tree-link.best-path {
-    stroke: #f59e0b;
+    stroke: #10b981;
     stroke-width: 3;
-    filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.6));
+    filter: drop-shadow(0 0 5px rgba(16, 185, 129, 0.7));
+}
+
+@keyframes popNode {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.node {
+    animation: popNode 0.5s ease-out 0.25s backwards;
 }
 
 .node-circle {
-    transition: transform 0.2s, filter 0.2s;
+    transition: filter 0.2s;
     cursor: pointer;
 }
 
 .node-circle:hover {
-    filter: brightness(1.25) drop-shadow(0 0 6px rgba(255, 255, 255, 0.4));
+    filter: brightness(1.25) drop-shadow(0 0 8px rgba(255, 255, 255, 0.45));
+}
+
+/* ===== Acessibilidade ===== */
+:focus-visible {
+    outline: 2px solid var(--yellow);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .piece-drop,
+    .tree-link,
+    .node {
+        animation: none !important;
+    }
 }

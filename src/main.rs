@@ -16,6 +16,7 @@ async fn main() {
     // Serve a pasta "static" na raiz do projeto (index.html, style.css, script.js)
     let app = Router::new()
         .fallback_service(ServeDir::new("static"))
+        .route("/reset", post(api::reset_game))
         .route("/turn_minimax", post(api::turn_minimax))
         .route("/turn_alpha_beta", post(api::turn_alpha_beta))
         .with_state(state);

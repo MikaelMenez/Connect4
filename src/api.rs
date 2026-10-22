@@ -22,6 +22,20 @@ pub struct Request {
     pub column: usize,
 }
 
+pub async fn reset_game(
+    State(state): State<AppState>,
+) -> Result<StatusCode, (StatusCode, &'static str)> {
+    let mut board = state.board.lock().map_err(|_| {
+        (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Erro de sincronização no servidor",
+        )
+    })?;
+
+    *board = Board::new();
+    Ok(StatusCode::NO_CONTENT)
+}
+
 pub async fn turn_minimax(
     State(state): State<AppState>,
     Json(payload): Json<Request>,
